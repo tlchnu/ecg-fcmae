@@ -240,6 +240,13 @@ def parse_args() -> argparse.Namespace:
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
     )
     parser.add_argument("--checkpoint", action="append", required=True, help="seed=checkpoint")
+    parser.add_argument(
+        "--expected-seeds",
+        type=int,
+        nargs="+",
+        default=[42, 2024, 3407],
+        help="Exact checkpoint seed set required by the formal analysis",
+    )
     parser.add_argument("--data-dir", type=Path, default=Path("data/echonext"))
     parser.add_argument("--csv-name", default="echonext_metadata_100k.csv")
     parser.add_argument("--test-wave-name", default="EchoNext_test_waveforms.npy")
@@ -268,8 +275,11 @@ def parse_args() -> argparse.Namespace:
 def main() -> None:
     args = parse_args()
     checkpoints = parse_seed_checkpoint(args.checkpoint)
-    if sorted(checkpoints) != [42, 2024, 3407]:
-        raise ValueError("Formal attribution stability requires seeds 42, 2024, and 3407")
+    if sorted(checkpoints) != sorted(args.expected_seeds):
+        raise ValueError(
+            "Formal attribution stability seed mismatch: "
+            f"expected {sorted(args.expected_seeds)}, got {sorted(checkpoints)}"
+        )
     if args.reference_steps not in args.ig_steps:
         raise ValueError("reference_steps must be included in ig_steps")
     analysis_dir = args.output_dir / "analysis"
@@ -280,6 +290,7 @@ def main() -> None:
         directory.mkdir(parents=True, exist_ok=True)
     config = {
         "seeds": sorted(checkpoints),
+        "expected_seeds": sorted(args.expected_seeds),
         "samples_per_label": args.samples_per_label,
         "selection_seed": args.selection_seed,
         "selection_rule": "fixed label-balanced selection independent of model predictions",
@@ -466,7 +477,10 @@ def main() -> None:
                 }
             )
     pd.DataFrame(convergence_rows).to_csv(analysis_dir / "ig_convergence.csv", index=False)
-    pd.DataFrame(cross_seed_rows).to_csv(analysis_dir / "cross_seed_stability.csv", index=False)
+    pd.DataFrame(
+        cross_seed_rows,
+        columns=["label_index", "label", "seed_pair", "lead_spearman", "time_pearson"],
+    ).to_csv(analysis_dir / "cross_seed_stability.csv", index=False)
     pd.DataFrame(baseline_rows).to_csv(analysis_dir / "baseline_sensitivity.csv", index=False)
     pd.DataFrame(occlusion_rows).to_csv(analysis_dir / "occlusion_agreement.csv", index=False)
     shuffled_label_complete = args.shuffled_label_checkpoint is not None
@@ -557,11 +571,21 @@ def main() -> None:
     row_names = [ECHONEXT_LABEL_COLS[index] for index in args.label_indices]
     save_heatmap(lead_matrix, row_names, LEAD_NAMES, figures_dir / "lead_stability_heatmap", "Cross-seed mean lead attribution")
     save_heatmap(time_matrix, row_names, [str(index) for index in range(args.temporal_bins)], figures_dir / "temporal_stability_heatmap", "Cross-seed mean temporal attribution")
+    cross_seed_complete = len(checkpoints) >= 2
+    completed = ["ig_convergence", "baseline_sensitivity", "parameter_randomization", "occlusion_agreement"]
+    blocked = []
+    if cross_seed_complete:
+        completed.append("cross_seed_stability")
+    else:
+        blocked.append("cross_seed_stability_pending_additional_seeds")
+    if shuffled_label_complete:
+        completed.append("shuffled_label_retrain")
+    else:
+        blocked.append("shuffled_label_retrain")
     status = {
-        "status": "complete" if shuffled_label_complete else "partial",
-        "completed": ["ig_convergence", "baseline_sensitivity", "cross_seed_stability", "parameter_randomization", "occlusion_agreement"]
-        + (["shuffled_label_retrain"] if shuffled_label_complete else []),
-        "blocked": [] if shuffled_label_complete else ["shuffled_label_retrain"],
+        "status": "complete" if not blocked else "partial",
+        "completed": completed,
+        "blocked": blocked,
         "seeds": sorted(checkpoints),
         "labels": args.label_indices,
         "samples_per_label": args.samples_per_label,

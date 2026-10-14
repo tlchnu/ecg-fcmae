@@ -5,15 +5,15 @@ All paths below are relative to `results/20260804_aug_jitter005_mask010_full_pap
 | Manuscript topic | Evidence directory/files | Code entry |
 |---|---|---|
 | Full vs same-architecture random initialization | `01_core/{full,strict_no_pretraining}/exact_seed_metrics.csv`, `exact_summary.csv` | `scripts/train_downstream.py`, `analysis/review_experiments_v1.py` |
-| Full vs Strict ensemble difference | `10_three_seed_paper_statistics_v1/full_vs_strict_ensemble_paired_95ci.csv` | Existing patient-level paired bootstrap export |
+| Full vs Strict ensemble difference | `10_three_seed_paper_statistics_v1/full_vs_strict_ensemble_paired_95ci.csv` | `scripts/analyze_three_seed_paper_predictions.py` |
 | Matched component ablations | `01_core/{no_eca,gap,stage4_only}/` | `scripts/train_downstream.py` |
 | Modalities and fusion | `01_core/{ecg_only,concat,tabular_only}/` | ECG trainer and `scripts/train_tabular_only.py` |
 | A–G cumulative configuration chain | `02_component_chain/component_{A,B,C,D}/` and `component_aliases_three_seed.json` | Paper YAMLs; E/F/G reuse ECG-only/Concat/Full |
 | Label efficiency | `03_low_label_272_v1/analysis/{summary,seed_metrics,paired_bootstrap}.csv` | `scripts/train_downstream_subset.py`, `scripts/analyze_aug_low_label_272.py` |
 | Low-label provenance | `03_low_label_272_v1/provenance/subset_provenance.csv` | Shared deterministic training permutation |
 | Reduced leads | `04_reduced_leads/`, `05_single_leads/` | Lead slicing and pretrained stem selection |
-| Twelve endpoints and ensemble intervals | `10_three_seed_paper_statistics_v1/full_per_label_seed_and_ensemble.csv`, `full_ensemble_per_label_95ci.csv` | Original frozen three-seed statistics |
-| Ensemble overall/macro intervals | `10_three_seed_paper_statistics_v1/full_ensemble_aggregate_95ci.csv` | Original frozen three-seed statistics |
+| Twelve endpoints and ensemble intervals | `10_three_seed_paper_statistics_v1/full_per_label_seed_and_ensemble.csv`, `full_ensemble_per_label_95ci.csv` | `scripts/analyze_three_seed_paper_predictions.py` |
+| Ensemble overall/macro intervals | `10_three_seed_paper_statistics_v1/full_ensemble_aggregate_95ci.csv` | `scripts/analyze_three_seed_paper_predictions.py` |
 | Sixteen subgroups | `07_subgroups_three_seed_v1/` | `analysis/subgroup_analysis_v1.py` |
 | Computational efficiency | `08_efficiency_seed42/` | `analysis/model_efficiency_v1.py` |
 

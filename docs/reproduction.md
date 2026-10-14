@@ -42,6 +42,7 @@ python scripts/export_shd_predictions.py --help
 python analysis/review_experiments_v1.py --help
 python analysis/subgroup_analysis_v1.py --help
 python scripts/analyze_aug_low_label_272.py --help
+python scripts/analyze_three_seed_paper_predictions.py --help
 ```
 
 Use `export_shd_predictions.py` for the ECG model and `export_tabular_predictions.py` for the tabular baseline. Export validation and test separately for each checkpoint and seed. Keep these NPZs private: they contain ordered patient identifiers and labels needed to check paired alignment.
@@ -62,3 +63,13 @@ The verifier checks source/result hashes, syntax, seed sets, exact mean/sample-S
 This release preserves the numerical implementation used by the paper. It does not retrofit historical runs with new AMP, accumulation or resume semantics. FCMAE enables AMP on CUDA in its original implementation. Existing checkpoints are sufficient for inference and encoder transfer but do not provide a complete optimizer/RNG resume state. No training job is launched by the release verifier. Use a separate output directory for new experiments.
 
 The archival launch script is saved as `.sh.txt` only as provenance; it includes historical server shutdown logic and is not a supported execution entry point. Use the portable commands above.
+
+## Three-seed ensemble statistics
+
+The actual post-training analysis script is included with its launch-manifest hash. With private, strictly aligned prediction bundles:
+
+```bash
+python scripts/analyze_three_seed_paper_predictions.py --full-template "experiments/paper/full/predictions/seed_{seed}_test.npz" --scratch-template "experiments/paper/strict/predictions/seed_{seed}_test.npz" --seeds 42 2026 3407 --bootstrap-iters 2000 --bootstrap-seed 20260820 --output-dir experiments/paper/ensemble_statistics
+```
+
+Confirm ordered patient IDs, record IDs, labels and split hashes using the prediction manifests and the strict review utility before this original analysis script. Its own alignment checks are narrower than the full historical provenance audit. The script is preserved as used for the frozen results.

@@ -1,0 +1,317 @@
+#!/usr/bin/env bash
+set -Eeuo pipefail
+shopt -s nullglob
+
+PROJECT=/root/autodl-tmp/project_001_ecg_convnext_ssl
+SNAPSHOT="$PROJECT/canonical_snapshots/20260731_noaug_v1"
+PY=/root/miniconda3/envs/myenv/bin/python
+ROOT="$PROJECT/experiments/20260804_aug_jitter005_mask010_full_paper_v1"
+COMPLETION="$ROOT/12_three_seed_completion_272_v1"
+ASSETS="$COMPLETION/launch_assets"
+QUEUE="$COMPLETION/logs"
+LOG="$QUEUE/queue.log"
+STATUS="$QUEUE/status.tsv"
+CONFIG="$ASSETS/20260803_aug_jitter005_mask010_seed42.yaml"
+PRETRAIN=experiments/experiments/20260629_fcmae_convnext_eca_pretrain/fcmae_convnext_eca_best.pt
+PRETRAIN_NO_ECA=experiments/experiments/20260623_fcmae_convnext/fcmae_convnext_best.pt
+EXPECTED_COMMIT=6b8eaf7b553758b962b7fe483b711284d514e247
+EXPECTED_TREE=665b9031feb5c0392bc86e3142b2d353bf4ea236
+EXPECTED_PRETRAIN_SHA=bc63726fdfe4ee28a59e4910f8e01450d84273dbb7b2fb3c56a700cf9b37fb72
+SEEDS=(42 2026 3407)
+
+mkdir -p "$QUEUE"
+exec >>"$LOG" 2>&1
+record() {
+  printf '%s\t%s\t%s\n' "$(date -Iseconds)" "$1" "$2" >>"$STATUS"
+  printf '[%s] %s %s\n' "$(date -Iseconds)" "$1" "$2"
+}
+on_exit() {
+  code=$?
+  trap - EXIT INT TERM
+  if [ "$code" -ne 0 ]; then
+    record FAILED "exit_code=$code shutdown=required"
+    printf '%s\n' "$code" >"$QUEUE/QUEUE_FAILED"
+    sync
+    printf '%s\n' "$(date -Iseconds)" >"$QUEUE/SHUTDOWN_AFTER_FAILURE_REQUESTED"
+    /usr/bin/shutdown -h now || true
+  fi
+  exit "$code"
+}
+trap on_exit EXIT INT TERM
+
+cd "$SNAPSHOT"
+export PYTHONDONTWRITEBYTECODE=1
+export PYTHONPATH="$SNAPSHOT:$SNAPSHOT/src${PYTHONPATH:+:$PYTHONPATH}"
+export PYTHONUNBUFFERED=1 CUDA_VISIBLE_DEVICES=0
+test "$(git rev-parse HEAD)" = "$EXPECTED_COMMIT"
+test "$(git rev-parse 'HEAD^{tree}')" = "$EXPECTED_TREE"
+test -z "$(git status --porcelain)"
+test "$(sha256sum "$PRETRAIN" | awk '{print $1}')" = "$EXPECTED_PRETRAIN_SHA"
+test -s "$PRETRAIN_NO_ECA"
+test -s "$CONFIG"
+test -s "$ASSETS/export_tabular_predictions.py"
+test -s "$ASSETS/analyze_attribution_stability.py"
+test -s "$ASSETS/analyze_three_seed_paper_predictions.py"
+test -s "$ASSETS/finalize_aug_three_seed_272_20260820.py"
+test -x /usr/bin/shutdown
+if pgrep -af '^/root/miniconda3/envs/myenv/bin/python .*scripts/(train_downstream|train_downstream_subset|train_tabular_only|pretrain_fcmae)\.py' >/dev/null; then
+  record REFUSED existing_training
+  exit 4
+fi
+
+{
+  printf 'launch=%s\nserver=272\nseeds=42,2026,3407\naugmentation=jitter0.05,mask0.1\n' "$(date -Iseconds)"
+  printf 'policy=run exact missing seed difference only; never retrain completed rows\n'
+  printf 'reduced_leads=limb6,precordial6,anatomical4,lead_i,lead_ii; 12lead_pretrain+slice+stem_select; no V1\n'
+  printf 'analyses=predictions,per-label,paired bootstrap 2000,95CI,subgroups,efficiency,cross-seed attribution,shuffled-label sanity\n'
+  sha256sum "$CONFIG" "$PRETRAIN" "$PRETRAIN_NO_ECA" "$ASSETS"/*.py "$ASSETS/remote_queue_aug_three_seed_remaining_272_20260820.sh"
+} >"$COMPLETION/source_manifest.txt"
+
+"$PY" - "$COMPLETION/existing_results_not_retrained.json" <<'PY'
+import json,sys
+payload = {
+    "policy": "existing completed results are not retrained",
+    "not_retrained": {
+        "full": {"seeds": [42, 2026, 3407], "reason": "metrics and exactly one resolved checkpoint per seed already exist"},
+        "low_label": {
+            "experiments": ["ssl_01pct", "scratch_01pct", "ssl_05pct", "scratch_05pct", "ssl_10pct", "scratch_10pct", "ssl_30pct", "scratch_30pct"],
+            "seeds": [42, 2026, 3407],
+            "reason": "completed previously on server 15866; user explicitly prohibited continuing existing results",
+        },
+        "seed42_core_and_components": {"seeds": [42], "reason": "validated existing rows and checkpoints"},
+        "efficiency": {"seed": 42, "reason": "model efficiency is deterministic for the fixed architecture and already complete"},
+    },
+    "low_label_100pct_aliases": {"ssl": "01_core/full", "scratch": "01_core/strict_no_pretraining"},
+}
+open(sys.argv[1], "w", encoding="utf-8").write(json.dumps(payload, indent=2))
+PY
+
+metric_seeds() {
+  "$PY" - "$1/metrics.csv" <<'PY'
+import pandas as pd,sys
+try:
+    frame=pd.read_csv(sys.argv[1])
+    print(" ".join(str(value) for value in sorted(set(frame.Seed.astype(int)))))
+except FileNotFoundError:
+    print("")
+PY
+}
+missing_seeds() {
+  "$PY" - "$1/metrics.csv" <<'PY'
+import pandas as pd,sys
+expected=[42,2026,3407]
+try: present=set(pd.read_csv(sys.argv[1]).Seed.astype(int))
+except FileNotFoundError: present=set()
+print(" ".join(str(seed) for seed in expected if seed not in present))
+PY
+}
+validate_metrics() {
+  "$PY" - "$1/metrics.csv" <<'PY'
+import pandas as pd,sys
+frame=pd.read_csv(sys.argv[1])
+assert len(frame)==3 and set(frame.Seed.astype(int))=={42,2026,3407}, (len(frame),frame.Seed.tolist())
+PY
+}
+checkpoint_for_seed() {
+  matches=("$1"/*seed"$2".pth)
+  test "${#matches[@]}" -eq 1
+  test -e "${matches[0]}"
+  printf '%s\n' "${matches[0]}"
+}
+run_downstream_missing() {
+  target=$1 experiment_name=$2 description=$3
+  shift 3
+  read -r -a missing <<<"$(missing_seeds "$target")"
+  if [ "${#missing[@]}" -eq 0 ]; then
+    record SKIP "$experiment_name training seeds=$(metric_seeds "$target")"
+    validate_metrics "$target"
+    return
+  fi
+  record START "$experiment_name missing_seeds=${missing[*]}"
+  "$PY" scripts/train_downstream.py --config "$CONFIG" --seeds "${missing[@]}" --num-workers 8 \
+    --output-root "$(dirname "$target")" --experiment-name "$experiment_name" --des "$description" "$@"
+  validate_metrics "$target"
+  record COMPLETE "$experiment_name seeds=42,2026,3407"
+}
+run_tabular_missing() {
+  target=$1
+  read -r -a missing <<<"$(missing_seeds "$target")"
+  if [ "${#missing[@]}" -eq 0 ]; then record SKIP "tabular_only training"; validate_metrics "$target"; return; fi
+  record START "tabular_only missing_seeds=${missing[*]}"
+  "$PY" scripts/train_tabular_only.py --dataset echonext --data-dir data/echonext --tabular-features 7 \
+    --epochs 100 --patience 10 --batch-size 256 --num-workers 8 --seeds "${missing[@]}" \
+    --base-lr 0.001 --weight-decay 0.0001 --output-root "$(dirname "$target")" \
+    --experiment-name tabular_only --des tabular_only_waveform_augmentation_not_applicable
+  validate_metrics "$target"
+  record COMPLETE "tabular_only seeds=42,2026,3407"
+}
+export_predictions() {
+  target=$1 lead=${2:-full12} mode=${3:-zero_fill} exporter=${4:-wave}
+  mkdir -p "$target/predictions"
+  for seed in "${SEEDS[@]}"; do
+    checkpoint=$(checkpoint_for_seed "$target" "$seed")
+    for split in val test; do
+      output="$target/predictions/seed_${seed}_${split}.npz"
+      if [ -s "$output" ] && [ -s "${output%.npz}.manifest.json" ]; then continue; fi
+      record START "export $(basename "$target") seed=$seed split=$split"
+      if [ "$exporter" = tabular ]; then
+        "$PY" "$ASSETS/export_tabular_predictions.py" --checkpoint "$checkpoint" --seed "$seed" --split "$split" \
+          --data-dir data/echonext --wave-name "EchoNext_${split}_waveforms.npy" \
+          --tab-name "EchoNext_${split}_tabular_features.npy" --output "$output" --batch-size 512 --num-workers 8
+      else
+        "$PY" scripts/export_shd_predictions.py --checkpoint "$checkpoint" --seed "$seed" --split "$split" \
+          --data-dir data/echonext --wave-name "EchoNext_${split}_waveforms.npy" \
+          --tab-name "EchoNext_${split}_tabular_features.npy" --output "$output" --batch-size 512 --num-workers 8 \
+          --lead-setting "$lead" --lead-input-mode "$mode"
+      fi
+    done
+  done
+}
+review_valid() {
+  "$PY" - "$1/review_status.json" "$2" <<'PY'
+import json,sys
+status=json.load(open(sys.argv[1],encoding="utf-8"))
+assert status.get("status")=="complete"
+assert set(status.get("seeds",[]))=={42,2026,3407}
+if sys.argv[2]=="paired": assert status.get("bootstrap_iterations")==2000
+PY
+}
+review_experiment() {
+  target=$1 reference=${2:-}
+  mode=unpaired; [ -n "$reference" ] && mode=paired
+  if [ -s "$target/review_status.json" ] && review_valid "$target" "$mode" 2>/dev/null; then
+    record SKIP "review $(basename "$target")"
+    return
+  fi
+  cmd=("$PY" analysis/review_experiments_v1.py --experiment-dir "$target" --expected-seeds 42 2026 3407 --bootstrap-iters 2000 --bootstrap-seed 20260820)
+  [ -n "$reference" ] && cmd+=(--reference-template "$reference")
+  record START "review $(basename "$target")"
+  "${cmd[@]}"
+  review_valid "$target" "$mode"
+}
+
+FULL="$ROOT/01_core/full"
+STRICT="$ROOT/01_core/strict_no_pretraining"
+NOECA="$ROOT/01_core/no_eca"
+GAP="$ROOT/01_core/gap"
+STAGE4="$ROOT/01_core/stage4_only"
+ECG="$ROOT/01_core/ecg_only"
+CONCAT="$ROOT/01_core/concat"
+TAB="$ROOT/01_core/tabular_only"
+
+record START three_seed_remaining_272
+validate_metrics "$FULL"
+run_downstream_missing "$STRICT" strict_no_pretraining strict_no_pretraining_jitter005_mask010 --pretrained '' --llrd
+run_downstream_missing "$NOECA" no_eca no_eca_jitter005_mask010 --no-eca
+run_downstream_missing "$GAP" gap gap_jitter005_mask010 --pool avg
+run_downstream_missing "$STAGE4" stage4_only stage4_only_jitter005_mask010 --single-scale
+run_downstream_missing "$ECG" ecg_only ecg_only_jitter005_mask010 --fusion none
+run_downstream_missing "$CONCAT" concat concat_jitter005_mask010 --fusion concat
+run_tabular_missing "$TAB"
+
+for letter in A B C D; do
+  target="$ROOT/02_component_chain/component_$letter"
+  case "$letter" in
+    A) component_args=(--pretrained '' --llrd --no-eca --single-scale --pool avg --fusion none) ;;
+    B) component_args=(--pretrained "$PRETRAIN_NO_ECA" --no-eca --single-scale --pool avg --fusion none) ;;
+    C) component_args=(--single-scale --pool avg --fusion none) ;;
+    D) component_args=(--single-scale --pool attn --fusion none) ;;
+  esac
+  run_downstream_missing "$target" "component_$letter" "component_$letter" "${component_args[@]}"
+done
+
+for lead in limb6 precordial6 anatomical4; do
+  target="$ROOT/04_reduced_leads/$lead"
+  run_downstream_missing "$target" "$lead" "$lead" --lead-setting "$lead" --lead-input-mode slice --pretrained-stem-mode select
+done
+for lead in lead_i lead_ii; do
+  target="$ROOT/05_single_leads/$lead"
+  run_downstream_missing "$target" "$lead" "$lead" --lead-setting "$lead" --lead-input-mode slice --pretrained-stem-mode select
+done
+
+for target in "$FULL" "$STRICT" "$NOECA" "$GAP" "$STAGE4" "$ECG" "$CONCAT"; do export_predictions "$target"; done
+export_predictions "$TAB" full12 zero_fill tabular
+for letter in A B C D; do export_predictions "$ROOT/02_component_chain/component_$letter"; done
+for lead in limb6 precordial6 anatomical4; do export_predictions "$ROOT/04_reduced_leads/$lead" "$lead" slice; done
+for lead in lead_i lead_ii; do export_predictions "$ROOT/05_single_leads/$lead" "$lead" slice; done
+
+review_experiment "$FULL"
+for target in "$STRICT" "$NOECA" "$GAP" "$STAGE4" "$ECG" "$CONCAT" "$TAB"; do
+  review_experiment "$target" "$FULL/predictions/seed_{seed}_test.npz"
+done
+for letter in A B C D; do
+  review_experiment "$ROOT/02_component_chain/component_$letter" "$FULL/predictions/seed_{seed}_test.npz"
+done
+for lead in limb6 precordial6 anatomical4; do
+  review_experiment "$ROOT/04_reduced_leads/$lead" "$FULL/predictions/seed_{seed}_test.npz"
+done
+for lead in lead_i lead_ii; do
+  review_experiment "$ROOT/05_single_leads/$lead" "$FULL/predictions/seed_{seed}_test.npz"
+done
+
+"$PY" - "$ROOT/02_component_chain/component_aliases_three_seed.json" <<'PY'
+import json,sys
+payload={
+ "seeds":[42,2026,3407],
+ "component_E":"01_core/ecg_only",
+ "component_F":"01_core/concat",
+ "component_G":"01_core/full",
+ "policy":"exact architecture aliases; no duplicate training",
+}
+open(sys.argv[1],"w",encoding="utf-8").write(json.dumps(payload,indent=2))
+PY
+
+PAPER_STATS="$ROOT/10_three_seed_paper_statistics_v1"
+if [ ! -s "$PAPER_STATS/status.json" ]; then
+  record START three_seed_per_label_and_ensemble_ci
+  "$PY" "$ASSETS/analyze_three_seed_paper_predictions.py" \
+    --full-template "$FULL/predictions/seed_{seed}_test.npz" \
+    --scratch-template "$STRICT/predictions/seed_{seed}_test.npz" \
+    --seeds 42 2026 3407 --bootstrap-iters 2000 --bootstrap-seed 20260820 --output-dir "$PAPER_STATS"
+fi
+
+SG="$ROOT/07_subgroups_three_seed_v1"
+SGIN="$SG/prediction_input"
+if [ ! -s "$SG/status.json" ]; then
+  mkdir -p "$SGIN"
+  for seed in "${SEEDS[@]}"; do
+    mkdir -p "$SGIN/seed_$seed"
+    ln -sfn "$FULL/predictions/seed_${seed}_test.npz" "$SGIN/seed_$seed/ssl_test.npz"
+    ln -sfn "$STRICT/predictions/seed_${seed}_test.npz" "$SGIN/seed_$seed/scratch_test.npz"
+  done
+  record START subgroup_three_seed_bootstrap_2000
+  "$PY" analysis/subgroup_analysis_v1.py --metadata_csv data/echonext/echonext_metadata_100k.csv \
+    --label_csv data/echonext/echonext_metadata_100k.csv --prediction_root "$SGIN" --output_dir "$SG" \
+    --models scratch ssl --seeds 42 2026 3407 --bootstrap_iters 2000 --bootstrap_seed 20260820
+fi
+
+SHUFFLED="$ROOT/09_attribution_three_seed_v1/shuffled_label_control"
+if [ ! -s "$SHUFFLED/metrics.csv" ]; then
+  record START shuffled_label_control_seed42
+  "$PY" scripts/train_downstream.py --config "$CONFIG" --seeds 42 --num-workers 8 \
+    --output-root "$(dirname "$SHUFFLED")" --experiment-name shuffled_label_control \
+    --des shuffled_label_control_jitter005_mask010 --shuffle-train-labels-seed 20260820
+fi
+SHUFFLED_CHECKPOINT=$(checkpoint_for_seed "$SHUFFLED" 42)
+
+ATT="$ROOT/09_attribution_three_seed_v1"
+if [ ! -s "$ATT/analysis/status.json" ]; then
+  record START attribution_three_seed_with_shuffled_label_control
+  "$PY" "$ASSETS/analyze_attribution_stability.py" \
+    --checkpoint "42=$(checkpoint_for_seed "$FULL" 42)" \
+    --checkpoint "2026=$(checkpoint_for_seed "$FULL" 2026)" \
+    --checkpoint "3407=$(checkpoint_for_seed "$FULL" 3407)" \
+    --expected-seeds 42 2026 3407 --shuffled-label-checkpoint "$SHUFFLED_CHECKPOINT" \
+    --output-dir "$ATT" --samples-per-label 64 --selection-seed 20260820 \
+    --ig-steps 32 64 128 --reference-steps 64 --noise-baselines 3 --batch-size 8 \
+    --temporal-bins 100 --occlusion-windows 20 --randomization-samples 16
+fi
+
+"$PY" "$ASSETS/finalize_aug_three_seed_272_20260820.py" --root "$ROOT" --completion-dir "$COMPLETION"
+test -s "$COMPLETION/THREE_SEED_PAPER_COMPLETE.json"
+record COMPLETE three_seed_remaining_272
+touch "$QUEUE/QUEUE_COMPLETE"
+trap - EXIT INT TERM
+sync
+printf '%s\n' "$(date -Iseconds)" >"$QUEUE/SHUTDOWN_REQUESTED"
+/usr/bin/shutdown -h now

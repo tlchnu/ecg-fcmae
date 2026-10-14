@@ -4,7 +4,7 @@ Release date: **2026-10-15**. This is a packaging and validation task; no scient
 
 The experiment launch script explicitly changes into `canonical_snapshots/20260731_noaug_v1` and asserts commit `6b8eaf7b553758b962b7fe483b711284d514e247`, tree `665b9031feb5c0392bc86e3142b2d353bf4ea236`. This snapshot supplies the released model/data/metric code and core training/analysis scripts. Its name does not override the augmented paper configuration.
 
-The server's working model code has subsequently changed in four files. Publishing that mutable directory as if it generated the paper would be misleading. The full per-file comparison is in `provenance/server_environment.json`. Later low-label audit scripts and tabular prediction export are included separately, with individual source hashes.
+The server's working model code has subsequently changed in four files. Publishing that mutable directory as if it generated the paper would be misleading. The full per-file comparison is in `provenance/server_environment.json`. Later low-label audit scripts, the actual three-seed/ensemble statistic script, the three-seed attribution script and tabular prediction export are included separately, with individual source hashes. The four later launch assets were checked against their recorded August 20 launch-manifest SHA-256 values.
 
 `provenance/source_files.json` records the exact source-relative path, original SHA-256, released SHA-256 and modification status for every copied file. Downloaded files were independently hashed after transfer. Core model and metric files remain byte-identical to the canonical snapshot.
 

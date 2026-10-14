@@ -260,14 +260,6 @@
       "modified": false
     },
     {
-      "path": "scripts/analyze_attribution_stability.py",
-      "source": "server:canonical_snapshots/20260731_noaug_v1/scripts/analyze_attribution_stability.py",
-      "source_sha256": "b5d49de4f14c633e14657a4d8837c62fcf8e04a8828d8e65d182ca4e183cb424",
-      "source_bytes": 27836,
-      "release_sha256": "b5d49de4f14c633e14657a4d8837c62fcf8e04a8828d8e65d182ca4e183cb424",
-      "modified": false
-    },
-    {
       "path": "scripts/build_shd_paper_summary.py",
       "source": "server:canonical_snapshots/20260731_noaug_v1/scripts/build_shd_paper_summary.py",
       "source_sha256": "1d4a5653a73ca6120b1247cd7cfd7b9b1ec937e996ebd058a310da385fb347fa",
@@ -473,14 +465,6 @@
       "source_sha256": "96cf4d25eab29ff62deae7565e3338e7204660f28b73cf40d545ff3920a5ba4e",
       "source_bytes": 7622,
       "release_sha256": "96cf4d25eab29ff62deae7565e3338e7204660f28b73cf40d545ff3920a5ba4e",
-      "modified": false
-    },
-    {
-      "path": "scripts/export_tabular_predictions.py",
-      "source": "server:experiments/20260804_aug_jitter005_mask010_full_paper_v1/launch_assets/export_tabular_predictions.py",
-      "source_sha256": "3afbc3c87292ae276430e93553b575e3eca7b0cd2b099ffc4b0975be04d2d29d",
-      "source_bytes": 7235,
-      "release_sha256": "3afbc3c87292ae276430e93553b575e3eca7b0cd2b099ffc4b0975be04d2d29d",
       "modified": false
     },
     {
@@ -2602,6 +2586,38 @@
       "source_bytes": 24207,
       "release_sha256": "635899059a0a9c789fc2502d034a7fa878a155007bee4a18ad07918aa37dbd02",
       "modified": true
+    },
+    {
+      "path": "scripts/analyze_three_seed_paper_predictions.py",
+      "source": "server:experiments/20260804_aug_jitter005_mask010_full_paper_v1/12_three_seed_completion_272_v1/launch_assets/analyze_three_seed_paper_predictions.py",
+      "source_sha256": "22afa6e867b5aef78d047e9c80b0a25d0160979650dd07e9197e3a74c64a2234",
+      "release_sha256": "22afa6e867b5aef78d047e9c80b0a25d0160979650dd07e9197e3a74c64a2234",
+      "source_bytes": 12332,
+      "modified": false
+    },
+    {
+      "path": "scripts/analyze_attribution_stability.py",
+      "source": "server:experiments/20260804_aug_jitter005_mask010_full_paper_v1/12_three_seed_completion_272_v1/launch_assets/analyze_attribution_stability.py",
+      "source_sha256": "62ea9dffc9a9ebf1ba70e39519a9c825d9bbd1d3727964bd35b666bfd82e04cc",
+      "release_sha256": "62ea9dffc9a9ebf1ba70e39519a9c825d9bbd1d3727964bd35b666bfd82e04cc",
+      "source_bytes": 28522,
+      "modified": false
+    },
+    {
+      "path": "scripts/export_tabular_predictions.py",
+      "source": "server:experiments/20260804_aug_jitter005_mask010_full_paper_v1/12_three_seed_completion_272_v1/launch_assets/export_tabular_predictions.py",
+      "source_sha256": "3afbc3c87292ae276430e93553b575e3eca7b0cd2b099ffc4b0975be04d2d29d",
+      "release_sha256": "3afbc3c87292ae276430e93553b575e3eca7b0cd2b099ffc4b0975be04d2d29d",
+      "source_bytes": 7235,
+      "modified": false
+    },
+    {
+      "path": "docs/provenance/original_three_seed_launch.sh.txt",
+      "source": "server:experiments/20260804_aug_jitter005_mask010_full_paper_v1/12_three_seed_completion_272_v1/launch_assets/remote_queue_aug_three_seed_remaining_272_20260820.sh",
+      "source_sha256": "453eabf7d988d682504cf1068a0eaa6a242e223a161f1edafff760b0a503d8c2",
+      "release_sha256": "453eabf7d988d682504cf1068a0eaa6a242e223a161f1edafff760b0a503d8c2",
+      "source_bytes": 14315,
+      "modified": false
     }
   ]
 }
