@@ -1,0 +1,4 @@
+* -text
+*.png binary
+*.pdf binary
+# Preserve source and frozen-result bytes for the SHA-256 provenance manifest.

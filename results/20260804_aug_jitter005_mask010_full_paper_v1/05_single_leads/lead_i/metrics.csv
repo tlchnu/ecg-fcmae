@@ -1,0 +1,4 @@
+Dataset,Config,Model,Des,Loss,Seed,Params(M),EMA,SWA,EarlyStop_Patience,Best_Epoch,Val_Primary_AUROC,Test_Primary_AUROC,Test_Primary_AUPRC,Test_Macro_AUROC,Test_Macro_F1,Test_Micro_F1,Time(min)
+echonext,lead_i_pretrained,convnext_tiny,lead_i,bce,42,12.15,True,False,10,9,0.8168,0.8239,0.7959,0.8008,0.2017,0.4692,31.9
+echonext,lead_i_pretrained,convnext_tiny,lead_i,bce,2026,12.15,True,False,10,10,0.818,0.8249,0.7964,0.7915,0.2068,0.4668,33.2
+echonext,lead_i_pretrained,convnext_tiny,lead_i,bce,3407,12.15,True,False,10,10,0.8161,0.8245,0.7962,0.7978,0.2008,0.4666,33.0

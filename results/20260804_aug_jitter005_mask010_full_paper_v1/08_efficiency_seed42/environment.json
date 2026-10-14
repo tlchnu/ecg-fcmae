@@ -1,0 +1,55 @@
+{
+  "python": "3.10.20",
+  "torch": "2.5.1+cu124",
+  "cuda_runtime": "12.4",
+  "device": "NVIDIA GeForce RTX 4090",
+  "checkpoint": "/root/autodl-tmp/project_001_ecg_convnext_ssl/experiments/20260804_aug_jitter005_mask010_full_paper_v1/01_core/full/echonext_full_jitter005_mask010_pretrained_bce_full_jitter005_mask010_seed42.pth",
+  "model_config": {
+    "in_channels": 12,
+    "num_classes": 12,
+    "tabular_features": 7,
+    "depths": [
+      3,
+      3,
+      9,
+      3
+    ],
+    "dims": [
+      64,
+      128,
+      256,
+      512
+    ],
+    "stage_kernel_sizes": [
+      7,
+      7,
+      7,
+      7
+    ],
+    "block_type": "convnext",
+    "drop_path_rate": 0.1,
+    "layer_scale_init": 0.0,
+    "use_eca": true,
+    "multi_scale_feat": true,
+    "tab_hidden": 64,
+    "head_dropout": 0.2,
+    "pool": "attn",
+    "fusion": "film",
+    "stem_kernel_size": 4,
+    "stem_stride": 4,
+    "lead_stem": false,
+    "lead_mixer_heads": 4,
+    "lead_dropout": 0.0,
+    "inception_kernels": [
+      3,
+      7,
+      15
+    ],
+    "inception_branch_ratio": 0.25,
+    "deploy": false
+  },
+  "mac_scope": "Conv1d and Linear only; normalization, activations, pooling reductions, interpolation, sigmoid, FiLM/GRN elementwise operations excluded",
+  "flop_convention": "FLOPs = 2 * MACs",
+  "data_transfer_timed": false,
+  "latency_scope": "model forward pass with resident CUDA tensors and explicit synchronization"
+}

@@ -1,0 +1,65 @@
+experiment:
+  experiment_name: full
+  output_root: experiments/20260803_aug_jitter005_mask010_seed42_ablation_v1/models
+  des: full_jitter005_mask010_seed42
+
+data:
+  dataset: echonext
+  data_dir: data/echonext
+  csv_name: echonext_metadata_100k.csv
+  train_wave_name: EchoNext_train_waveforms.npy
+  train_tab_name: EchoNext_train_tabular_features.npy
+  val_wave_name: EchoNext_val_waveforms.npy
+  val_tab_name: EchoNext_val_tabular_features.npy
+  test_wave_name: EchoNext_test_waveforms.npy
+  test_tab_name: EchoNext_test_tabular_features.npy
+  tabular_features: 7
+  lead_setting: full12
+  lead_input_mode: zero_fill
+  shuffle_train_labels_seed: null
+
+model:
+  model: convnext_tiny
+  block_type: null
+  stage_kernel_sizes: null
+  layer_scale_init: null
+  stem_kernel_size: null
+  stem_stride: null
+  use_eca: true
+  multi_scale_feat: true
+  pool: attn
+  fusion: film
+  drop_path_rate: 0.1
+  pretrained: experiments/experiments/20260629_fcmae_convnext_eca_pretrain/fcmae_convnext_eca_best.pt
+  pretrained_stem_mode: select
+
+training:
+  epochs: 100
+  patience: 10
+  batch_size: 64
+  num_workers: 8
+  seeds: [42]
+  loss: bce
+  shd_consistency_weight: 0.0
+  base_lr: 0.001
+  weight_decay: 0.05
+  augmentations: jitter0.05,mask0.1
+  ema: true
+  ema_decay: 0.999
+  swa: false
+  swa_start_frac: 0.75
+  grad_clip: 1.0
+  llrd: false
+  layer_decay: 0.75
+  deterministic: true
+  smoke_test: false
+
+execution:
+  ablation: false
+  architecture_ablation: false
+  skip_train: false
+
+output:
+  results_csv: metrics.csv
+  baseline_msr: null
+  show_plot: false

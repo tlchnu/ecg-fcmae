@@ -1,0 +1,34 @@
+% !TeX program = pdflatex
+\documentclass[final,5p,times,twocolumn,nonatbib]{elsarticle}
+
+\newif\ifBSPCtwocolumn
+\BSPCtwocolumntrue
+\input{common/common_macros.tex}
+\input{common/common_float_settings.tex}
+
+\input{common/common_bibliography_settings.tex}
+\setcounter{secnumdepth}{2}
+
+\journal{Biomedical Signal Processing and Control}
+
+\begin{document}
+\begin{frontmatter}
+
+\title{ECG-based Structural Heart Disease Screening via Fully Convolutional Masked Pretraining and a One-Dimensional ConvNeXt}
+
+\begin{abstract}
+Echocardiography is the reference standard for confirming structural heart disease (SHD), but its limited accessibility makes scalable screening challenging. Twelve-lead electrocardiograms (ECGs) are widely available and may contain signatures of structural abnormalities. Self-supervised learning on unlabeled ECGs can reduce dependence on paired ECG--echocardiography labels. We developed ECG-FCMAE, a masked self-supervised pretraining framework that combines shared temporal-patch masking across synchronized leads with a one-dimensional ConvNeXt encoder and tabular conditioning. We evaluated pretrained and randomly initialized models using the same downstream architecture and training protocol in the retrospective EchoNext cohort. Across three downstream seeds, mean Overall SHD area under the receiver operating characteristic curve (AUROC) was $0.8521\pm0.0008$ with pretraining versus $0.8448\pm0.0001$ with random initialization. The three-seed probability-ensemble difference was $+0.0061$ (patient-level paired 95\% confidence interval [CI], $[0.0034,\,0.0088]$). Pretraining improved both AUROC and area under the precision--recall curve at 1\%, 5\%, 10\%, 30\%, and 100\% of labeled training records, with all paired CIs excluding zero. The AUROC gain was largest at 1\% labeling ($+0.0323$; 95\% CI, $[0.0239,\,0.0408]$). These findings indicate that masked ECG pretraining improves SHD discrimination and label efficiency, with the greatest AUROC gain when labeled data are scarce.
+\end{abstract}
+
+\begin{keyword}
+structural heart disease \sep 12-lead electrocardiogram \sep masked self-supervised learning \sep ECG representation learning \sep label efficiency
+\end{keyword}
+
+\end{frontmatter}
+\raggedbottom
+
+\input{en/manuscript_en_body.tex}
+
+\BSPCprintbibliography
+
+\end{document}

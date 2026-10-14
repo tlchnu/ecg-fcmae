@@ -1,0 +1,22 @@
+[build-system]
+requires = ["setuptools>=69", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "ecg-fcmae"
+version = "0.1.0"
+description = "Paper code and frozen aggregate results for ECG-FCMAE"
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+  "torch>=2.5,<2.6", "numpy>=1.26,<2", "pandas>=2.2,<2.3",
+  "scikit-learn>=1.7,<1.8", "scipy>=1.15,<1.16",
+  "matplotlib>=3.10,<3.11", "PyYAML>=6,<7", "tqdm>=4.67,<5", "wfdb==4.1.2",
+]
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["src", "analysis"]

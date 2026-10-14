@@ -1,0 +1,118 @@
+{
+  "python": "3.10.20",
+  "packages": {
+    "torch": "2.5.1",
+    "numpy": "1.26.4",
+    "pandas": "2.2.2",
+    "scikit-learn": "1.7.2",
+    "scipy": "1.15.3",
+    "matplotlib": "3.10.8",
+    "PyYAML": "6.0.3",
+    "tqdm": "4.67.1",
+    "wfdb": "4.1.2"
+  },
+  "pretraining": {
+    "experiments/experiments/20260629_fcmae_convnext_eca_pretrain": {
+      "files": [
+        "effective_config.yaml",
+        "environment.json",
+        "fcmae_convnext_eca.pt",
+        "fcmae_convnext_eca_best.pt"
+      ],
+      "effective_config.yaml": "batch_size: 64\nblock_type: null\nconfig: null\ncsv_name: echonext_metadata_100k.csv\ndata_dir: data/echonext\ndataset: echonext\ndeterministic: true\nepochs: 100\nexperiment_name: experiments/20260629_fcmae_convnext_eca_pretrain\nlayer_scale_init: null\nlr: 0.00015\nmask_ratio: 0.6\nmodel: convnext_tiny\nno_norm_pix: false\nnum_workers: 8\nout: fcmae_convnext_eca.pt\noutput_root: experiments\npatch_size: 25\nptbxl_cache: true\nptbxl_dir: ./ptbxl\nptbxl_drop_conflict: true\nptbxl_min_samples: 0\nptbxl_sampling_rate: 100\nptbxl_standardize: true\nptbxl_task: super\nptbxl_test_fold: 10\nptbxl_train_fold: 8\nptbxl_val_fold: 9\nseed: 42\nsmoke_test: false\nsplit: train\nstage_kernel_sizes: null\ntabular_features: 0\ntest_tab_name: EchoNext_test_tabular_features.npy\ntest_wave_name: EchoNext_test_waveforms.npy\ntrain_tab_name: EchoNext_train_tabular_features.npy\ntrain_wave_name: EchoNext_train_waveforms.npy\nuse_eca: true\nval_tab_name: EchoNext_val_tabular_features.npy\nval_wave_name: EchoNext_val_waveforms.npy\nweight_decay: 0.05\n",
+      "environment.json": "{\n  \"timestamp\": \"2026-06-29T22:48:19\",\n  \"python\": \"3.10.20 (main, Mar 11 2026, 17:46:40) [GCC 14.3.0]\",\n  \"platform\": \"Linux-5.15.0-78-generic-x86_64-with-glibc2.35\",\n  \"torch\": \"2.5.1+cu124\",\n  \"cuda_available\": true,\n  \"cuda_version\": \"12.4\",\n  \"cudnn_version\": 90100,\n  \"gpu\": \"NVIDIA GeForce RTX 4090\",\n  \"git_revision\": null\n}"
+    }
+  },
+  "source_comparison": [
+    {
+      "path": "src/ecg_project/__init__.py",
+      "current_sha256": "6836ae6a2d822f1b2086ff2378c15daf2426fbd54f5c30b8396d9b995ca4c03c",
+      "canonical_sha256": "6836ae6a2d822f1b2086ff2378c15daf2426fbd54f5c30b8396d9b995ca4c03c"
+    },
+    {
+      "path": "src/ecg_project/augmentations.py",
+      "current_sha256": "1d370ebff7088b4a1fb6198febf1587815f70622699097679c99d85f0731df4a",
+      "canonical_sha256": "1d370ebff7088b4a1fb6198febf1587815f70622699097679c99d85f0731df4a"
+    },
+    {
+      "path": "src/ecg_project/data/__init__.py",
+      "current_sha256": "ac1028fc45ace5d9a3100595a914fd72db8bc40d976015051f4da96090650a41",
+      "canonical_sha256": "ac1028fc45ace5d9a3100595a914fd72db8bc40d976015051f4da96090650a41"
+    },
+    {
+      "path": "src/ecg_project/data/datasets.py",
+      "current_sha256": "86e11901229b545346715dbbef222908354bbef724def1f8a29900e9f839c2b0",
+      "canonical_sha256": "86e11901229b545346715dbbef222908354bbef724def1f8a29900e9f839c2b0"
+    },
+    {
+      "path": "src/ecg_project/data/ptbxl.py",
+      "current_sha256": "0e81fd0c992849b223b38199331a7f42338e4360b9892b64ee57bc5e643774c0",
+      "canonical_sha256": "0e81fd0c992849b223b38199331a7f42338e4360b9892b64ee57bc5e643774c0"
+    },
+    {
+      "path": "src/ecg_project/models/__init__.py",
+      "current_sha256": "a0c5d896a96da6b6fa297e8481f57afd446b55972c280d9406c428901f689d7a",
+      "canonical_sha256": "a0c5d896a96da6b6fa297e8481f57afd446b55972c280d9406c428901f689d7a"
+    },
+    {
+      "path": "src/ecg_project/models/blocks.py",
+      "current_sha256": "decd181c04a60d2080055432727633413894c32611fb3d9cbf57d2ffbeffcc26",
+      "canonical_sha256": "decd181c04a60d2080055432727633413894c32611fb3d9cbf57d2ffbeffcc26"
+    },
+    {
+      "path": "src/ecg_project/models/convnext.py",
+      "current_sha256": "0ffaeb83a6b050146c524da21ee724ddc0accd47eb4cee5009bb2d709b83a120",
+      "canonical_sha256": "08ae228980ca4836923ab0825009b68e5a1475619adfe2b75db53f8a0726c1e9"
+    },
+    {
+      "path": "src/ecg_project/models/factory.py",
+      "current_sha256": "7834cb55847c7e31997d99cbe52f09cb9653e401e0347bd202cd494e9e3093c0",
+      "canonical_sha256": "664752b07c8a8a9fa3537c86f1a0eb2e321285b03a78398d9f14e77830f2d9bd"
+    },
+    {
+      "path": "src/ecg_project/models/heads.py",
+      "current_sha256": "1ae04e46a398ac303945f0cb77800e698da341416e87683c62b2bd5ff0f45c88",
+      "canonical_sha256": "1ae04e46a398ac303945f0cb77800e698da341416e87683c62b2bd5ff0f45c88"
+    },
+    {
+      "path": "src/ecg_project/models/layers.py",
+      "current_sha256": "e2381c6c94ea2e007686745f3e8ad36d1213c5d51cc5ad9a8ef04f444d10443c",
+      "canonical_sha256": "41ebe80a80195b16fd5a2b84ed0cd36bdef8722045cc370c719288f1575805c0"
+    },
+    {
+      "path": "src/ecg_project/models/mixers.py",
+      "current_sha256": "853f7a3e546237f33bade1ecb8d38a5468308a4ee7edf88fed5c4beee01cbb36",
+      "canonical_sha256": "0c3f699a888d3bd6b9f43c58df5cf76a65e647000e220cf2695d3572c3854f4c"
+    },
+    {
+      "path": "src/ecg_project/utils/__init__.py",
+      "current_sha256": "910995801b48427bf689019ef3379551c177e3b4f32f85512e768432fc604b74",
+      "canonical_sha256": "910995801b48427bf689019ef3379551c177e3b4f32f85512e768432fc604b74"
+    },
+    {
+      "path": "src/ecg_project/utils/checkpoint.py",
+      "current_sha256": "0fdda827a20b3bad0728e3980e2868c2d5226eb40ad807b6727d3d376072aa69",
+      "canonical_sha256": "0fdda827a20b3bad0728e3980e2868c2d5226eb40ad807b6727d3d376072aa69"
+    },
+    {
+      "path": "src/ecg_project/utils/config.py",
+      "current_sha256": "8f5836e47bb1a2680e5bb65403b49c887078349603506c9ccf5682ccd05d2bff",
+      "canonical_sha256": "8f5836e47bb1a2680e5bb65403b49c887078349603506c9ccf5682ccd05d2bff"
+    },
+    {
+      "path": "src/ecg_project/utils/experiment.py",
+      "current_sha256": "8c9afed9187699903e01da362427ca25fc8b6ee603ce69d6d75a7501b09120b7",
+      "canonical_sha256": "8c9afed9187699903e01da362427ca25fc8b6ee603ce69d6d75a7501b09120b7"
+    },
+    {
+      "path": "src/ecg_project/utils/metrics.py",
+      "current_sha256": "e4cd63530b79715603b871308e6b12d1085c389e82b2ef6e2c13337e064d264b",
+      "canonical_sha256": "e4cd63530b79715603b871308e6b12d1085c389e82b2ef6e2c13337e064d264b"
+    },
+    {
+      "path": "src/ecg_project/utils/reproducibility.py",
+      "current_sha256": "28af8f003cce55271f649a84fd74f420c1595cd7de1d9cb89c9adbd7a8d77dfb",
+      "canonical_sha256": "28af8f003cce55271f649a84fd74f420c1595cd7de1d9cb89c9adbd7a8d77dfb"
+    }
+  ]
+}

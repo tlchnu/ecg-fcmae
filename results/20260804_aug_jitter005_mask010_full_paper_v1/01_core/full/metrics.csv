@@ -1,0 +1,4 @@
+Dataset,Config,Model,Des,Loss,Seed,Params(M),EMA,SWA,EarlyStop_Patience,Best_Epoch,Val_Primary_AUROC,Test_Primary_AUROC,Test_Primary_AUPRC,Test_Macro_AUROC,Test_Macro_F1,Test_Micro_F1,Time(min)
+echonext,full_jitter005_mask010_pretrained,convnext_tiny,full_jitter005_mask010,bce,42,12.15,True,False,10,6,0.8433,0.8526,0.8238,0.8377,0.2849,0.5223,26.2
+echonext,full_jitter005_mask010_pretrained,convnext_tiny,full_jitter005_mask010,bce,2026,12.15,True,False,10,6,0.8429,0.8524,0.8255,0.8375,0.2897,0.5205,26.2
+echonext,full_jitter005_mask010_pretrained,convnext_tiny,full_jitter005_mask010,bce,3407,12.15,True,False,10,5,0.8425,0.8511,0.8254,0.8407,0.2709,0.5158,24.5

@@ -1,0 +1,2 @@
+n_seeds,primary_shd_auroc_mean,primary_shd_auroc_std,primary_shd_auprc_mean,primary_shd_auprc_std,macro_auroc_11_mean,macro_auroc_11_std,macro_auroc_12_mean,macro_auroc_12_std
+3,0.8462642932134603,0.0003319405740754112,0.8191570010111554,0.00046773276075197395,0.8306363858622342,0.0010966425610983471,0.8319387114748363,0.0010153549534583136

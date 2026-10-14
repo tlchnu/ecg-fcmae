@@ -1,0 +1,16 @@
+{
+  "status": "complete",
+  "n_test": 5442,
+  "unique_patients": 5442,
+  "subgroups": 16,
+  "bootstrap_iterations": 2000,
+  "seeds": [
+    42,
+    2026,
+    3407
+  ],
+  "models": [
+    "scratch",
+    "ssl"
+  ]
+}

@@ -1,0 +1,12 @@
+{
+  "status": "complete",
+  "experiment_dir": "/root/autodl-tmp/project_001_ecg_convnext_ssl/experiments/20260804_aug_jitter005_mask010_full_paper_v1/03_low_label_272_v1/ssl_01pct",
+  "seeds": [
+    42,
+    2026,
+    3407
+  ],
+  "n_seed_rows": 3,
+  "bootstrap_iterations": 0,
+  "reference_template": null
+}

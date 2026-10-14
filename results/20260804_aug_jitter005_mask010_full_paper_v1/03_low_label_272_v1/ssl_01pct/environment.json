@@ -1,0 +1,11 @@
+{
+  "timestamp": "2026-08-21T04:14:24",
+  "python": "3.10.20 (main, Mar 11 2026, 17:46:40) [GCC 14.3.0]",
+  "platform": "Linux-5.15.0-133-generic-x86_64-with-glibc2.35",
+  "torch": "2.5.1+cu124",
+  "cuda_available": true,
+  "cuda_version": "12.4",
+  "cudnn_version": 90100,
+  "gpu": "NVIDIA GeForce RTX 4090",
+  "git_revision": null
+}

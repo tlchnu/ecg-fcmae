@@ -1,0 +1,14 @@
+{
+  "status": "complete",
+  "seeds": [
+    42,
+    2026,
+    3407
+  ],
+  "n_test": 5442,
+  "n_labels": 12,
+  "bootstrap_iterations": 2000,
+  "bootstrap_unit": "patient row; one row per patient verified by prediction manifests",
+  "confidence_interval": "percentile 95%",
+  "paired_indices": true
+}

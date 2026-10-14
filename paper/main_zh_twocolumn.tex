@@ -1,0 +1,44 @@
+% !TeX program = xelatex
+\documentclass[final,5p,times,twocolumn,nonatbib]{elsarticle}
+
+\newif\ifBSPCtwocolumn
+\BSPCtwocolumntrue
+\usepackage{xeCJK}
+% Fandol is distributed with TeX Live and is available on Overleaf.
+\setCJKmainfont[
+  BoldFont=FandolHei-Regular.otf,
+  ItalicFont=FandolKai-Regular.otf,
+  BoldItalicFont=FandolHei-Regular.otf
+]{FandolSong-Regular.otf}
+\setCJKsansfont{FandolHei-Regular.otf}
+\setCJKmonofont{FandolFang-Regular.otf}
+\renewcommand{\figurename}{图}
+\renewcommand{\tablename}{表}
+\input{common/common_macros.tex}
+\input{common/common_float_settings.tex}
+\input{common/common_bibliography_settings.tex}
+\setcounter{secnumdepth}{3}
+
+\journal{Biomedical Signal Processing and Control}
+
+\begin{document}
+\begin{frontmatter}
+
+\title{基于全卷积掩码预训练与一维 ConvNeXt 的心电结构性心脏病筛查}
+
+\begin{abstract}
+超声心动图用于确认结构性心脏病（structural heart disease，SHD），十二导联心电图（ECG）则提供了广泛可得的结构异常预测信号。从未标注 ECG 学习表征可降低模型对配对心电图--超声心动图训练标签的依赖。本研究构建 ECG-FCMAE，将同步导联间共享的时间片段掩码、一维 ConvNeXt 编码器及Tabular inputs 条件调制结合，在 EchoNext 回顾性队列中比较具有相同下游架构和训练协议的预训练模型与随机初始化对照。三个下游种子中，预训练模型的 Overall SHD 受试者工作特征曲线下面积（AUROC）为 $0.8521\pm0.0008$，随机初始化对照为 $0.8448\pm0.0001$。三种子概率集成的 AUROC 差值为 $+0.0061$（患者级配对 95\% 置信区间：$[0.0034,\,0.0088]$）。在使用 1\%、5\%、10\%、30\% 和 100\% 有标签训练记录时，预训练均提高 AUROC 和精确率--召回率曲线下面积，所有配对区间均排除 0。AUROC 收益在 1\% 时最大，为 $+0.0323$（95\% 置信区间：$[0.0239,\,0.0408]$）。结果表明，掩码 ECG 预训练提高了 SHD 判别性能和标签利用效率。
+\end{abstract}
+
+\begin{keyword}
+结构性心脏病 \sep 十二导联心电图 \sep 掩码自监督学习 \sep 表征学习 \sep 标签利用效率
+\end{keyword}
+
+\end{frontmatter}
+\raggedbottom
+
+\input{zh/manuscript_zh_body.tex}
+
+\BSPCprintbibliography
+
+\end{document}

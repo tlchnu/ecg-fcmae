@@ -1,0 +1,373 @@
+#!/usr/bin/env bash
+set -Eeuo pipefail
+
+PROJECT=/root/autodl-tmp/project_001_ecg_convnext_ssl
+SNAPSHOT="$PROJECT/canonical_snapshots/20260731_noaug_v1"
+PY=/root/miniconda3/envs/myenv/bin/python
+ROOT="$PROJECT/experiments/20260804_aug_jitter005_mask010_full_paper_v1"
+ASSETS="$ROOT/launch_assets"
+QUEUE="$ROOT/logs"
+LOG="$QUEUE/queue.log"
+STATUS="$QUEUE/status.tsv"
+PREVIOUS="$PROJECT/experiments/20260803_aug_jitter005_mask010_seed42_ablation_v1/models"
+NOAUG="$PROJECT/experiments/20260729_noaug_seed42_2027_3407_v1"
+CONFIG="$ASSETS/20260803_aug_jitter005_mask010_seed42.yaml"
+PRETRAIN=experiments/experiments/20260629_fcmae_convnext_eca_pretrain/fcmae_convnext_eca_best.pt
+PRETRAIN_NO_ECA=experiments/experiments/20260623_fcmae_convnext/fcmae_convnext_best.pt
+EXPECTED_COMMIT=6b8eaf7b553758b962b7fe483b711284d514e247
+EXPECTED_TREE=665b9031feb5c0392bc86e3142b2d353bf4ea236
+EXPECTED_PRETRAIN_SHA=bc63726fdfe4ee28a59e4910f8e01450d84273dbb7b2fb3c56a700cf9b37fb72
+SEEDS=(42 2026 3407)
+
+mkdir -p "$QUEUE"
+exec >>"$LOG" 2>&1
+
+record() {
+  printf '%s\t%s\t%s\n' "$(date -Iseconds)" "$1" "$2" >>"$STATUS"
+  printf '[%s] %s %s\n' "$(date -Iseconds)" "$1" "$2"
+}
+
+on_exit() {
+  code=$?
+  trap - EXIT INT TERM
+  if [ "$code" -ne 0 ]; then
+    record FAILED "exit_code=$code"
+    printf '%s\n' "$code" >"$QUEUE/QUEUE_FAILED"
+  fi
+  exit "$code"
+}
+trap on_exit EXIT INT TERM
+
+cd "$SNAPSHOT"
+export PYTHONDONTWRITEBYTECODE=1
+export PYTHONPATH="$SNAPSHOT:$SNAPSHOT/src${PYTHONPATH:+:$PYTHONPATH}"
+export PYTHONUNBUFFERED=1
+export CUDA_VISIBLE_DEVICES=0
+
+test "$(git rev-parse HEAD)" = "$EXPECTED_COMMIT"
+test "$(git rev-parse 'HEAD^{tree}')" = "$EXPECTED_TREE"
+test -z "$(git status --porcelain)"
+test "$(sha256sum "$PRETRAIN" | awk '{print $1}')" = "$EXPECTED_PRETRAIN_SHA"
+test -s "$PRETRAIN_NO_ECA"
+test -s "$CONFIG"
+test -s "$ASSETS/export_tabular_predictions.py"
+test -s "$ASSETS/analyze_attribution_stability.py"
+test -s "$ASSETS/finalize_aug_full_paper_272_20260804.py"
+test -x /usr/bin/shutdown
+grep -Eq '^  augmentations: jitter0\.05,mask0\.1$' "$CONFIG"
+if pgrep -af '^/root/miniconda3/envs/myenv/bin/python .*scripts/(train_downstream|pretrain_fcmae)\.py' >/dev/null; then
+  record REFUSED "existing_training_process"
+  exit 4
+fi
+
+{
+  printf 'launch_time=%s\n' "$(date -Iseconds)"
+  printf 'hostname=%s\nserver=272\n' "$(hostname)"
+  printf 'protocol=jitter0.05,mask0.1\nseeds=42,2026,3407\n'
+  printf 'reduced_leads=12lead_pretrain+slice+stem_select; no lead-specific pretraining\n'
+  printf 'excluded=V1,external_validation,PTB-XL,pretraining_grid\n'
+  printf 'snapshot=%s\ncommit=%s\ntree=%s\n' "$SNAPSHOT" "$EXPECTED_COMMIT" "$EXPECTED_TREE"
+  printf 'pretrain_sha256=%s\n' "$(sha256sum "$PRETRAIN" | awk '{print $1}')"
+  printf 'pretrain_no_eca_sha256=%s\n' "$(sha256sum "$PRETRAIN_NO_ECA" | awk '{print $1}')"
+  sha256sum \
+    "$CONFIG" \
+    "$ASSETS/export_tabular_predictions.py" \
+    "$ASSETS/analyze_attribution_stability.py" \
+    "$ASSETS/finalize_aug_full_paper_272_20260804.py" \
+    "$ASSETS/remote_queue_aug_full_paper_272_20260804.sh"
+} >"$ROOT/source_manifest.txt"
+
+validate_metrics() {
+  "$PY" - "$1/metrics.csv" <<'PY'
+import sys
+import pandas as pd
+frame = pd.read_csv(sys.argv[1])
+assert len(frame) == 3, (sys.argv[1], len(frame))
+assert set(frame["Seed"].astype(int)) == {42, 2026, 3407}, frame["Seed"].tolist()
+PY
+}
+
+seed42_import() {
+  source=$1
+  target=$2
+  if [ -s "$target/seed42_import_manifest.txt" ]; then
+    return
+  fi
+  test -s "$source/metrics.csv"
+  mkdir -p "$target"
+  "$PY" - "$source/metrics.csv" "$target/metrics.csv" <<'PY'
+import sys
+import pandas as pd
+source = pd.read_csv(sys.argv[1])
+row = source.loc[source["Seed"].astype(int) == 42]
+assert len(row) == 1
+row.to_csv(sys.argv[2], index=False)
+PY
+  mapfile -t checkpoints < <(find "$source" -maxdepth 1 -type f -name '*seed42.pth' | sort)
+  test "${#checkpoints[@]}" -eq 1
+  ln -s "${checkpoints[0]}" "$target/$(basename "${checkpoints[0]}")"
+  {
+    printf 'source=%s\n' "$source"
+    sha256sum "$source/metrics.csv" "${checkpoints[0]}"
+  } >"$target/seed42_import_manifest.txt"
+}
+
+run_downstream() {
+  target=$1
+  name=$2
+  des=$3
+  shift 3
+  if [ -s "$target/metrics.csv" ]; then
+    if validate_metrics "$target" 2>/dev/null; then
+      record SKIP "$name metrics_complete"
+      return
+    fi
+  fi
+  record START "$name seeds=42,2026,3407"
+  "$PY" scripts/train_downstream.py \
+    --config "$CONFIG" --seeds 42 2026 3407 --num-workers 8 \
+    --output-root "$(dirname "$target")" --experiment-name "$name" --des "$des" "$@"
+  validate_metrics "$target"
+  record COMPLETE "$name"
+}
+
+run_subset() {
+  target=$1
+  name=$2
+  fraction=$3
+  shift 3
+  if [ -s "$target/metrics.csv" ]; then
+    if validate_metrics "$target" 2>/dev/null; then
+      record SKIP "$name metrics_complete"
+      return
+    fi
+  fi
+  record START "$name fraction=$fraction seeds=42,2026,3407"
+  "$PY" scripts/train_downstream_subset.py \
+    --config "$CONFIG" --seeds 42 2026 3407 --num-workers 8 \
+    --train-fraction "$fraction" --train-subset-seed 20260801 \
+    --subset-permutation-file "$NOAUG/03_low_label/splits/train_permutation_seed20260801.npy" \
+    --output-root "$(dirname "$target")" --experiment-name "$name" --des "$name" "$@"
+  validate_metrics "$target"
+  record COMPLETE "$name"
+}
+
+checkpoint_for_seed() {
+  mapfile -t matches < <(find "$1" -maxdepth 1 -type f -name "*seed$2.pth" | sort)
+  test "${#matches[@]}" -eq 1
+  printf '%s\n' "${matches[0]}"
+}
+
+export_predictions() {
+  target=$1
+  lead_setting=${2:-full12}
+  input_mode=${3:-zero_fill}
+  mkdir -p "$target/predictions"
+  for seed in "${SEEDS[@]}"; do
+    checkpoint=$(checkpoint_for_seed "$target" "$seed")
+    for split in val test; do
+      output="$target/predictions/seed_${seed}_${split}.npz"
+      manifest="${output%.npz}.manifest.json"
+      if [ -s "$output" ] && [ -s "$manifest" ]; then
+        continue
+      fi
+      record START "prediction $(basename "$target") seed=$seed split=$split"
+      "$PY" scripts/export_shd_predictions.py \
+        --checkpoint "$checkpoint" --seed "$seed" --split "$split" \
+        --data-dir data/echonext \
+        --wave-name "EchoNext_${split}_waveforms.npy" \
+        --tab-name "EchoNext_${split}_tabular_features.npy" \
+        --output "$output" --batch-size 512 --num-workers 8 \
+        --lead-setting "$lead_setting" --lead-input-mode "$input_mode"
+    done
+  done
+}
+
+review() {
+  target=$1
+  reference=${2:-}
+  if [ -s "$target/review_status.json" ]; then
+    return
+  fi
+  command=("$PY" analysis/review_experiments_v1.py --experiment-dir "$target" --expected-seeds 42 2026 3407 --bootstrap-iters 2000)
+  if [ -n "$reference" ]; then
+    command+=(--reference-template "$reference")
+  fi
+  record START "review $(basename "$target")"
+  "${command[@]}"
+  test -s "$target/review_status.json"
+}
+
+FULL="$ROOT/01_core/full"
+STRICT="$ROOT/01_core/strict_no_pretraining"
+NO_ECA="$ROOT/01_core/no_eca"
+GAP="$ROOT/01_core/gap"
+STAGE4="$ROOT/01_core/stage4_only"
+ECG_ONLY="$ROOT/01_core/ecg_only"
+CONCAT="$ROOT/01_core/concat"
+TABULAR="$ROOT/01_core/tabular_only"
+
+record START "full_augmented_paper_queue"
+for spec in \
+  "full:$FULL" \
+  "strict_no_pretraining:$STRICT" \
+  "no_eca:$NO_ECA" \
+  "gap:$GAP" \
+  "stage4_only:$STAGE4" \
+  "ecg_only:$ECG_ONLY" \
+  "concat:$CONCAT" \
+  "tabular_only:$TABULAR"; do
+  condition=${spec%%:*}
+  target=${spec#*:}
+  seed42_import "$PREVIOUS/$condition" "$target"
+done
+
+run_downstream "$FULL" full full_jitter005_mask010
+run_downstream "$STRICT" strict_no_pretraining strict_no_pretraining_jitter005_mask010 --pretrained '' --llrd
+run_downstream "$NO_ECA" no_eca no_eca_jitter005_mask010 --no-eca
+run_downstream "$GAP" gap gap_jitter005_mask010 --pool avg
+run_downstream "$STAGE4" stage4_only stage4_only_jitter005_mask010 --single-scale
+run_downstream "$ECG_ONLY" ecg_only ecg_only_jitter005_mask010 --fusion none
+run_downstream "$CONCAT" concat concat_jitter005_mask010 --fusion concat
+
+for target in "$FULL" "$STRICT" "$NO_ECA" "$GAP" "$STAGE4" "$ECG_ONLY" "$CONCAT"; do
+  export_predictions "$target"
+done
+review "$FULL"
+for target in "$STRICT" "$NO_ECA" "$GAP" "$STAGE4" "$ECG_ONLY" "$CONCAT"; do
+  review "$target" "$FULL/predictions/seed_{seed}_test.npz"
+done
+
+record START "tabular_only seeds=42,2026,3407 augmentation=not_applicable"
+"$PY" scripts/train_tabular_only.py \
+  --dataset echonext --data-dir data/echonext --tabular-features 7 \
+  --epochs 100 --patience 10 --batch-size 256 --num-workers 8 \
+  --seeds 42 2026 3407 --base-lr 0.001 --weight-decay 0.0001 \
+  --output-root "$(dirname "$TABULAR")" --experiment-name tabular_only \
+  --des tabular_only_waveform_augmentation_not_applicable
+validate_metrics "$TABULAR"
+mkdir -p "$TABULAR/predictions"
+for seed in "${SEEDS[@]}"; do
+  checkpoint=$(checkpoint_for_seed "$TABULAR" "$seed")
+  for split in val test; do
+    output="$TABULAR/predictions/seed_${seed}_${split}.npz"
+    if [ ! -s "$output" ] || [ ! -s "${output%.npz}.manifest.json" ]; then
+      "$PY" "$ASSETS/export_tabular_predictions.py" \
+        --checkpoint "$checkpoint" --seed "$seed" --split "$split" \
+        --data-dir data/echonext \
+        --wave-name "EchoNext_${split}_waveforms.npy" \
+        --tab-name "EchoNext_${split}_tabular_features.npy" \
+        --output "$output" --batch-size 512 --num-workers 8
+    fi
+  done
+done
+review "$TABULAR" "$FULL/predictions/seed_{seed}_test.npz"
+
+for letter in A B C D; do
+  target="$ROOT/02_component_chain/component_$letter"
+  case "$letter" in
+    A) args=(--pretrained '' --llrd --no-eca --single-scale --pool avg --fusion none) ;;
+    B) args=(--pretrained "$PRETRAIN_NO_ECA" --no-eca --single-scale --pool avg --fusion none) ;;
+    C) args=(--single-scale --pool avg --fusion none) ;;
+    D) args=(--single-scale --pool attn --fusion none) ;;
+  esac
+  run_downstream "$target" "component_$letter" "paper_component_$letter" "${args[@]}"
+  export_predictions "$target"
+  review "$target" "$FULL/predictions/seed_{seed}_test.npz"
+done
+
+for spec in "01:0.01" "05:0.05" "10:0.10" "30:0.30"; do
+  tag=${spec%%:*}
+  fraction=${spec##*:}
+  SSL="$ROOT/03_low_label/ssl_${tag}pct"
+  SCRATCH="$ROOT/03_low_label/scratch_${tag}pct"
+  run_subset "$SSL" "ssl_${tag}pct" "$fraction"
+  run_subset "$SCRATCH" "scratch_${tag}pct" "$fraction" --pretrained '' --llrd
+  export_predictions "$SSL"
+  export_predictions "$SCRATCH"
+  review "$SCRATCH"
+  review "$SSL" "$SCRATCH/predictions/seed_{seed}_test.npz"
+done
+
+for lead in limb6 precordial6 anatomical4; do
+  target="$ROOT/04_reduced_leads/$lead"
+  run_downstream "$target" "$lead" "${lead}_12lead_pretrain_stem_select" \
+    --lead-setting "$lead" --lead-input-mode slice --pretrained-stem-mode select
+  export_predictions "$target" "$lead" slice
+  review "$target" "$FULL/predictions/seed_{seed}_test.npz"
+done
+
+for lead in lead_i lead_ii; do
+  target="$ROOT/05_single_leads/$lead"
+  run_downstream "$target" "$lead" "${lead}_12lead_pretrain_stem_select" \
+    --lead-setting "$lead" --lead-input-mode slice --pretrained-stem-mode select
+  export_predictions "$target" "$lead" slice
+  review "$target" "$FULL/predictions/seed_{seed}_test.npz"
+done
+
+PER_LABEL="$ROOT/06_per_label"
+if [ ! -s "$PER_LABEL/summary.json" ]; then
+  record START "per_label_full_vs_strict_seed42_bootstrap"
+  "$PY" scripts/evaluate_checkpoints_bootstrap.py \
+    --baseline-checkpoint "$(checkpoint_for_seed "$STRICT" 42)" \
+    --best-checkpoint "$(checkpoint_for_seed "$FULL" 42)" \
+    --baseline-name strict_no_pretraining --best-name full \
+    --output-dir "$PER_LABEL" --bootstrap-iters 2000 --bootstrap-seed 20260804 \
+    --batch-size 512 --num-workers 8
+fi
+test -s "$PER_LABEL/per_label_metrics_long.csv"
+
+SUBGROUP_INPUT="$ROOT/07_subgroups/prediction_input"
+SUBGROUP_OUT="$ROOT/07_subgroups"
+mkdir -p "$SUBGROUP_INPUT"
+for seed in "${SEEDS[@]}"; do
+  mkdir -p "$SUBGROUP_INPUT/seed_$seed"
+  ln -sfn "$FULL/predictions/seed_${seed}_test.npz" "$SUBGROUP_INPUT/seed_$seed/ssl_test.npz"
+  ln -sfn "$STRICT/predictions/seed_${seed}_test.npz" "$SUBGROUP_INPUT/seed_$seed/scratch_test.npz"
+done
+if [ ! -s "$SUBGROUP_OUT/status.json" ]; then
+  record START "subgroup_full_vs_strict"
+  "$PY" analysis/subgroup_analysis_v1.py \
+    --metadata_csv data/echonext/echonext_metadata_100k.csv \
+    --label_csv data/echonext/echonext_metadata_100k.csv \
+    --prediction_root "$SUBGROUP_INPUT" --output_dir "$SUBGROUP_OUT" \
+    --models scratch ssl --seeds 42 2026 3407 \
+    --bootstrap_iters 2000 --bootstrap_seed 20260804
+fi
+test -s "$SUBGROUP_OUT/status.json"
+
+EFFICIENCY="$ROOT/08_efficiency"
+if [ ! -s "$EFFICIENCY/efficiency_summary.json" ]; then
+  record START "model_efficiency"
+  "$PY" analysis/model_efficiency_v1.py \
+    --checkpoint "$(checkpoint_for_seed "$FULL" 42)" \
+    --output_dir "$EFFICIENCY" --signal_length 2500 \
+    --warmup 50 --repetitions 500 --batch_sizes 1 64
+fi
+test -s "$EFFICIENCY/efficiency_summary.json"
+
+ATTRIBUTION="$ROOT/09_attribution"
+if [ ! -s "$ATTRIBUTION/analysis/status.json" ]; then
+  record START "three_seed_attribution_stability"
+  "$PY" "$ASSETS/analyze_attribution_stability.py" \
+    --checkpoint "42=$(checkpoint_for_seed "$FULL" 42)" \
+    --checkpoint "2026=$(checkpoint_for_seed "$FULL" 2026)" \
+    --checkpoint "3407=$(checkpoint_for_seed "$FULL" 3407)" \
+    --expected-seeds 42 2026 3407 \
+    --output-dir "$ATTRIBUTION" --samples-per-label 64 \
+    --selection-seed 20260804 --ig-steps 32 64 128 \
+    --reference-steps 64 --noise-baselines 3 --batch-size 8 \
+    --temporal-bins 100 --occlusion-windows 20 --randomization-samples 16
+fi
+test -s "$ATTRIBUTION/analysis/status.json"
+
+record START "finalize"
+"$PY" "$ASSETS/finalize_aug_full_paper_272_20260804.py" --root "$ROOT"
+test -s "$ROOT/COMPLETE.json"
+test -e "$ROOT/10_summary/SUMMARY_COMPLETE"
+record COMPLETE "full_augmented_paper_queue"
+touch "$QUEUE/QUEUE_COMPLETE"
+trap - EXIT INT TERM
+sync
+printf '%s\n' "$(date -Iseconds)" >"$QUEUE/SHUTDOWN_REQUESTED"
+/usr/bin/shutdown -h now

@@ -1,0 +1,16 @@
+% Keep compact tables next to their discussion at a fixed font size.
+\setcounter{topnumber}{1}
+\setcounter{bottomnumber}{1}
+\setcounter{totalnumber}{2}
+\renewcommand{\topfraction}{0.72}
+\renewcommand{\bottomfraction}{0.55}
+\renewcommand{\textfraction}{0.22}
+\renewcommand{\floatpagefraction}{0.78}
+\ifBSPCtwocolumn
+  \setcounter{dbltopnumber}{2}
+  \renewcommand{\dbltopfraction}{0.80}
+  \renewcommand{\dblfloatpagefraction}{0.78}
+\fi
+\setlength{\textfloatsep}{12pt plus 2pt minus 2pt}
+\setlength{\floatsep}{10pt plus 2pt minus 2pt}
+\setlength{\intextsep}{10pt plus 2pt minus 2pt}

@@ -1,0 +1,11 @@
+{
+  "seeds": [
+    42,
+    2026,
+    3407
+  ],
+  "component_E": "01_core/ecg_only",
+  "component_F": "01_core/concat",
+  "component_G": "01_core/full",
+  "policy": "exact architecture aliases; no duplicate training"
+}

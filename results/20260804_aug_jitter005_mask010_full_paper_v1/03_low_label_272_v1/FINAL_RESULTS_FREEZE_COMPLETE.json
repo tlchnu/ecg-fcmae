@@ -1,0 +1,39 @@
+{
+  "status": "complete",
+  "freeze_gate": "PASS",
+  "created_at": "2026-08-21T07:30:59",
+  "freeze_path": "/root/autodl-tmp/project_001_ecg_convnext_ssl/experiments/20260804_aug_jitter005_mask010_full_paper_v1/12_three_seed_completion_272_v1/final_results_freeze.md",
+  "freeze_sha256": "8de76b010728a1a3d65e5ebc46aaeafa305478a4c7fb5eb9cd332a01e81c819f",
+  "versioned_freeze_path": "/root/autodl-tmp/project_001_ecg_convnext_ssl/experiments/20260804_aug_jitter005_mask010_full_paper_v1/12_three_seed_completion_272_v1/final_results_freeze_v2.md",
+  "versioned_freeze_sha256": "8de76b010728a1a3d65e5ebc46aaeafa305478a4c7fb5eb9cd332a01e81c819f",
+  "low_label_status": {
+    "status": "complete",
+    "seeds": [
+      42,
+      2026,
+      3407
+    ],
+    "fractions": [
+      0.01,
+      0.05,
+      0.1,
+      0.3,
+      1.0
+    ],
+    "methods": [
+      "ssl",
+      "scratch"
+    ],
+    "trained_conditions": 8,
+    "trained_runs": 24,
+    "full_fraction_aliases": {
+      "ssl": "/root/autodl-tmp/project_001_ecg_convnext_ssl/experiments/20260804_aug_jitter005_mask010_full_paper_v1/01_core/full",
+      "scratch": "/root/autodl-tmp/project_001_ecg_convnext_ssl/experiments/20260804_aug_jitter005_mask010_full_paper_v1/01_core/strict_no_pretraining"
+    },
+    "bootstrap_iterations": 2000,
+    "bootstrap_unit": "patient row; one row per patient in test predictions",
+    "paired_indices": true,
+    "nested_subset_validation": "passed",
+    "prediction_alignment_validation": "passed"
+  }
+}

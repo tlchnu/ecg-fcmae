@@ -1,0 +1,4 @@
+seed,reference_path,delta_auroc,delta_auroc_ci_low,delta_auroc_ci_high,delta_auprc,delta_auprc_ci_low,delta_auprc_ci_high,bootstrap_n
+42,/root/autodl-tmp/project_001_ecg_convnext_ssl/experiments/20260804_aug_jitter005_mask010_full_paper_v1/01_core/full/predictions/seed_42_test.npz,-0.0933062961286668,-0.10433146235733022,-0.08240200948077804,-0.12291094537048644,-0.13949923767825986,-0.10715169220978414,2000
+2026,/root/autodl-tmp/project_001_ecg_convnext_ssl/experiments/20260804_aug_jitter005_mask010_full_paper_v1/01_core/full/predictions/seed_2026_test.npz,-0.09439797708043023,-0.10524332230228162,-0.08387422629831762,-0.1267544467914987,-0.14238992349773807,-0.1108977285245037,2000
+3407,/root/autodl-tmp/project_001_ecg_convnext_ssl/experiments/20260804_aug_jitter005_mask010_full_paper_v1/01_core/full/predictions/seed_3407_test.npz,-0.09236266506883001,-0.10288300067933281,-0.08175527696716141,-0.12338240450081417,-0.13835411750723647,-0.107537276084822,2000

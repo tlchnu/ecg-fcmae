@@ -1,0 +1,4 @@
+Dataset,Config,Model,Des,Loss,Seed,Params(M),EMA,SWA,EarlyStop_Patience,Best_Epoch,Val_Primary_AUROC,Test_Primary_AUROC,Test_Primary_AUPRC,Test_Macro_AUROC,Test_Macro_F1,Test_Micro_F1,Time(min)
+echonext,low_label_ssl_30pct_jitter005_mask010_pretrained,convnext_tiny,low_label_ssl_30pct_jitter005_mask010,bce,42,12.15,True,False,10,9,0.8363,0.8449,0.8179,0.8323,0.2531,0.5008,10.5
+echonext,low_label_ssl_30pct_jitter005_mask010_pretrained,convnext_tiny,low_label_ssl_30pct_jitter005_mask010,bce,2026,12.15,True,False,10,9,0.836,0.8441,0.8191,0.8305,0.2564,0.5,10.5
+echonext,low_label_ssl_30pct_jitter005_mask010_pretrained,convnext_tiny,low_label_ssl_30pct_jitter005_mask010,bce,3407,12.15,True,False,10,9,0.8359,0.8451,0.8185,0.8324,0.25,0.5045,10.7

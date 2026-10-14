@@ -1,0 +1,4 @@
+Dataset,Config,Model,Des,Loss,Seed,Params(M),EMA,SWA,EarlyStop_Patience,Best_Epoch,Val_Primary_AUROC,Test_Primary_AUROC,Test_Primary_AUPRC,Test_Macro_AUROC,Test_Macro_F1,Test_Micro_F1,Time(min)
+echonext,tabular_only,tabular_mlp,tabular_only_waveform_augmentation_not_applicable,bce,42,0.0191,False,False,10,44,0.7404,0.7593,0.7007,0.7291,0.0883,0.3672,5.9
+echonext,tabular_only,tabular_mlp,tabular_only_waveform_augmentation_not_applicable,bce,2026,0.0191,False,False,10,65,0.741,0.7581,0.6982,0.7304,0.0906,0.3688,7.6
+echonext,tabular_only,tabular_mlp,tabular_only_waveform_augmentation_not_applicable,bce,3407,0.0191,False,False,10,61,0.741,0.7588,0.7016,0.7323,0.0917,0.37,7.3

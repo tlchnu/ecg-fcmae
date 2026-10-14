@@ -1,0 +1,87 @@
+% Shared packages and formatting-only compatibility definitions.
+\usepackage{amsmath,amssymb}
+\usepackage{array,booktabs,tabularx}
+\usepackage{caption}
+\DeclareCaptionFont{bspctablefont}{\fontsize{8}{10}\selectfont}
+\captionsetup[table]{font=bspctablefont,labelfont=normalfont,position=top,skip=4pt}
+\captionsetup[figure]{position=bottom}
+\newcommand{\BSPCtableformat}{\fontsize{8}{10}\selectfont\setlength{\tabcolsep}{2pt}\renewcommand{\arraystretch}{1.12}}
+\usepackage{placeins}
+\usepackage{flafter}
+\usepackage{dblfloatfix}
+\usepackage{cite}
+
+% Preserve the approved source behavior: two consecutive references form a range.
+\makeatletter
+\def\@compress@cite#1#2#3{%
+  \ifnum\@cite@incr=\z@
+    \advance\@tempcnta\@cclvi
+    \ifnum #1=\@tempcnta
+      \def\@h@ld{\citedash\@cite@out{#3}}%
+      \mathchardef\@cite@incr=\@cclvi
+    \else
+      \advance\@tempcnta-\@cclv
+      \ifnum #1=\@tempcnta
+        \def\@h@ld{\citedash\@cite@out{#3}}%
+        \mathchardef\@cite@incr=\@ne
+      \else
+        \@citea\@cite@out{#3}%
+      \fi
+    \fi
+  \else
+    \advance\@tempcnta\@cite@incr
+    \ifnum #1=\@tempcnta
+      \def\@h@ld{\citedash\@cite@out{#3}}%
+    \else
+      \@h@ld\@citea\@cite@out{#3}%
+      \let\@h@ld\@empty
+      \mathchardef\@cite@incr=\z@
+    \fi
+  \fi
+  \@tempcnta#1\let\@citea\citepunct
+}
+\makeatother
+\renewcommand{\citedash}{\hbox{--}\penalty\citepunctpenalty}
+
+\usepackage{url}
+\usepackage[hidelinks]{hyperref}
+
+\graphicspath{{figures/}}
+\newcolumntype{Y}{>{\raggedright\arraybackslash}X}
+\newcolumntype{Z}{>{\centering\arraybackslash}X}
+\setlength{\emergencystretch}{1em}
+\hyphenation{echo-car-di-og-ra-phy}
+
+% The same body file expands to ordinary floats in preprint mode and to
+% full-width floats for wide items in the 5p two-column preview. Define the
+% selected environment statically so a conditional never crosses a float group.
+\ifBSPCtwocolumn
+  \newenvironment{bspcwidefigure}[1][!t]{\begin{figure*}[#1]}{\end{figure*}}
+  \newenvironment{bspclabelefficiencyfigure}{\begin{figure*}[t]}{\end{figure*}}
+  \newenvironment{bspcwidetable}[1][!t]{\begin{table*}[#1]}{\end{table*}}
+  \newcommand{\BSPCcompacttableformat}{\BSPCtableformat}
+  \newcommand{\BSPCstrictnopretraining}{\shortstack[l]{Strict no-\\pretraining}}
+  \newcommand{\BSPCstorelabelefficiencyinterpretation}[1]{\gdef\BSPClabelefficiencyinterpretation{#1}}
+  \newcommand{\BSPCemitlabelefficiencyinterpretation}{\BSPClabelefficiencyinterpretation}
+  % Keep prose available to backfill pages while wide floats wait for their
+  % next legal top position. Source order and the double-float limit retain the
+  % architecture sequence without forcing a sparse transition page.
+  \newcommand{\BSPCseparatearchitecturefigures}{}
+  \newcommand{\BSPCseparatelabelefficiencyfloats}{}
+  \newcommand{\BSPCseparateresultfloatgroups}{}
+  \newcommand{\BSPCkeependpointorder}{}
+\else
+  % Preprint mode can use here/top/bottom/float-page placement.  The body keeps
+  % the same scientific float declarations as the two-column build.
+  \newenvironment{bspcwidefigure}[1][!htbp]{\begin{figure}[!htbp]}{\end{figure}}
+  \newenvironment{bspclabelefficiencyfigure}{\begin{figure}[!htbp]}{\end{figure}}
+  \newenvironment{bspcwidetable}[1][!htbp]{\begin{table}[!htbp]}{\end{table}}
+  \newcommand{\BSPCcompacttableformat}{\BSPCtableformat}
+  \newcommand{\BSPCstrictnopretraining}{Strict no-pretraining}
+  \newcommand{\BSPCstorelabelefficiencyinterpretation}[1]{#1}
+  \newcommand{\BSPCemitlabelefficiencyinterpretation}{}
+  \newcommand{\BSPCseparatearchitecturefigures}{}
+  \newcommand{\BSPCseparatelabelefficiencyfloats}{}
+  \newcommand{\BSPCseparateresultfloatgroups}{}
+  \newcommand{\BSPCkeependpointorder}{}
+\fi
